@@ -58,8 +58,22 @@ def take_snapshot():
 @maintain_git_workspace
 def export_snapshot(rat_id):
     from shutil import copytree, ignore_patterns
-    g.checkout(f"refs/labrats/{rat_id}")
-    copytree('.', f'export-rats/{rat_id}', ignore=ignore_patterns('*.git'))
+    try:
+        g.checkout(f"refs/labrats/{rat_id}")
+        copytree('.', f'export-rats/{rat_id}', ignore=ignore_patterns('*.git'))
+    except Exception as e:
+        print(e)
+
+
+class data_saver:
+    def __init__(self, fn):
+        import datetime
+        ts = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        self.fn = f'tmp/{fn}-{ts}'
+
+    def save(self, a):
+        with open(self.fn, 'w') as data_file:
+            data_file.write(f'{a}')
 
 
 if __name__ == '__main__':
