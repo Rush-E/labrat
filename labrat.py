@@ -20,12 +20,13 @@ def maintain_git_workspace(func):
     def wrapper(*args, **kw):
         prev_branch = get_current_branch()
         g.add('.')
-        g.stash()
+        info = g.stash()
 
         rv = func(*args, **kw)
 
         g.checkout(prev_branch)
-        g.stash('pop')
+        if info != 'No local changes to save':
+            g.stash('pop')
         g.reset()
 
         return rv
@@ -34,10 +35,11 @@ def maintain_git_workspace(func):
 
 
 def take_snapshot():
+    rat_id = uuid.uuid4().hex
+
     @maintain_git_workspace
     def save_new_branch():
         branch_name = f'labrat-tmp-branch-{uuid.uuid4().hex}'
-        rat_id = uuid.uuid4().hex
 
         g.checkout('-b', branch_name)
         g.stash('apply')
@@ -50,12 +52,16 @@ def take_snapshot():
         return branch_name
 
     g.branch('-D', save_new_branch())
+    return rat_id
+
 
 @maintain_git_workspace
 def export_snapshot(rat_id):
     from shutil import copytree, ignore_patterns
     g.checkout(f"refs/labrats/{rat_id}")
     copytree('.', f'export-rats/{rat_id}', ignore=ignore_patterns('*.git'))
-    
 
-# take_snapshot()
+
+if __name__ == '__main__':
+    import sys
+    export_snapshot(sys.argv[1])
